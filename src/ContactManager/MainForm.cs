@@ -24,6 +24,41 @@ namespace ContactManager
       InitializeComponent();
       contacts.ListChanged += contacts_ListChanged;
       UpdateButtons();
+
+      string appData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+      string dir = "[choices]";
+      string fullDir = Path.Combine(appData, dir);
+      if (!Directory.Exists(fullDir))
+      {
+        Directory.CreateDirectory(fullDir);
+      }
+
+      string settings = Path.Combine(fullDir, "data.xml");
+      if (!File.Exists(settings))
+      {
+        new XElement("settings").Save(settings);
+      }
+
+      var doc = XDocument.Load(settings);
+      var nodes = doc
+        .Descendants("app")
+        .GroupBy(d => d.Attribute("name").Value)
+        .ToDictionary(g => g.Key, g => g.ToArray());
+      XElement[] matches;
+      if (!nodes.TryGetValue("ContactManager", out matches))
+      {
+        ShowMessageAndSaveSettings(doc, settings);
+      }
+    }
+
+    private async void ShowMessageAndSaveSettings(XDocument doc, string settings)
+    {
+      await Task.Yield();
+      XtraMessageBox.Show(this, "Does it work NOW!? Don't worry, this won't show again", "Sassy", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+      doc.Root.Add(new XElement("app",
+        new XAttribute("name", "ContactManager"),
+        new XAttribute("show", false)));
+      doc.Save(settings);
     }
 
     private void UpdateButtons()
